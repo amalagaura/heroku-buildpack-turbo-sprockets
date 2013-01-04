@@ -2,16 +2,6 @@
 
 # sync output
 $stdout.sync = true
-
-$:.unshift File.expand_path("../../lib", __FILE__)
-require "language_pack"
-
-if pack = LanguagePack.detect(ARGV[0], ARGV[1])
-  pack.log("compile") do
-    pack.compile
-  end
-end
-
 S3_PREFIX='http://s3.amazonaws.com/heroku_binaries'
 NAME_SOURCES={pdftk: 'pdftk.tar.gz', poppler: 'heroku-poppler.tgz', pdf2txt: 'pdf2txt.tgz'}
 
@@ -19,11 +9,19 @@ def path
   "#{ARGV[0]}/vendor"
 end
 
-def compile
-  NAME_SOURCES.each do |name, source_url|
-    puts "copying #{name}"
-    #download the source and extract
-    %x{ mkdir -p #{path} && curl --silent "#{S3_PREFIX}/#{source_url}" -o - | tar -xz -C #{path} -f - }
-    puts "complete extracting #{name}"
+
+NAME_SOURCES.each do |name, source_url|
+  puts "copying #{name}"
+  #download the source and extract
+  %x{ mkdir -p #{path} && curl --silent "#{S3_PREFIX}/#{source_url}" -o - | tar -xz -C #{path} -f - }
+  puts "complete extracting #{name}"
+end
+
+$:.unshift File.expand_path("../../lib", __FILE__)
+require "language_pack"
+
+if pack = LanguagePack.detect(ARGV[0], ARGV[1])
+  pack.log("compile") do
+    pack.compile
   end
 end
