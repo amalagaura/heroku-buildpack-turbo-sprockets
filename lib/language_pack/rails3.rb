@@ -6,9 +6,10 @@ class LanguagePack::Rails3 < LanguagePack::Rails2
   # detects if this is a Rails 3.x app
   # @return [Boolean] true if it's a Rails 3.x app
   def self.use?
-    super &&
-      File.exists?("config/application.rb") &&
-      File.read("config/application.rb") =~ /Rails::Application/
+    if gemfile_lock?
+      rails_version = LanguagePack::Ruby.gem_version('railties')
+      rails_version >= Gem::Version.new('3.0.0') && rails_version < Gem::Version.new('4.0.0') if rails_version
+    end
   end
 
   def name
@@ -44,7 +45,7 @@ private
           puts "Detected manifest.yml, assuming assets were compiled locally"
         else
           FileUtils.mkdir_p('public')
-          cache_load "public/assets"
+          cache.load "public/assets"
 
           ENV["RAILS_GROUPS"] ||= "assets"
           ENV["RAILS_ENV"]    ||= "production"
@@ -64,14 +65,14 @@ private
                 run("env PATH=$PATH:bin bundle exec rake assets:clean_expired 2>&1")
                 if $?.success?
                   log "assets_clean_expired", :status => "success"
-                  cache_store "public/assets"
+                  cache.store "public/assets"
                 else
                   log "assets_clean_expired", :status => "failure"
-                  cache_clear "public/assets"
+                  cache.clear "public/assets"
                 end
               end
             else
-              cache_clear "public/assets"
+              cache.clear "public/assets"
             end
           else
             log "assets_precompile", :status => "failure"
